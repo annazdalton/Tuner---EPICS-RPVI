@@ -39,7 +39,9 @@ teensy_audio_error_t init_audio_system(void)
         Serial.println("SD card initialized successfully.");
     }
    
-    //initalize audio memory blocks
+    //initalize audio memory blocks - allocated 20 blocks in RAM
+    //each block is 128 samples (~2.9ms at 44.1kHz). 
+    //more blocks means code can handle more complex audio chains but uses more RAM
     AudioMemory(20); 
     sgtl5000.enable();
     sgtl5000.volume(0.5); 
@@ -50,7 +52,8 @@ teensy_audio_error_t init_audio_system(void)
     return TEENSY_AUDIO_OK;
 }
 
-
+//---------opens audio file (on SD card)--------------
+//pretty self explanatory, it returns error if it fails
 teensy_audio_error_t open_audio_file(teensy_audio_stream_t* stream, const char* filename) {
     //open file thats stored on SD card
     stream->audio_file = SD.open(filename);
@@ -65,7 +68,6 @@ teensy_audio_error_t open_audio_file(teensy_audio_stream_t* stream, const char* 
     stream->bytes_read = 0;
     stream->is_playing = true;
     
-    //prints when files can be opened
     Serial.print("Opened audio file: ");
     Serial.print(filename);
     Serial.print(", size: ");
@@ -75,6 +77,7 @@ teensy_audio_error_t open_audio_file(teensy_audio_stream_t* stream, const char* 
     return TEENSY_AUDIO_OK;
 }
 
+//reads block of audio samples from audio file
 teensy_audio_error_t read_audio_block(teensy_audio_stream_t* stream, float* output) {
     if (!stream->is_playing || !stream->audio_file.available()) {
         stream->is_playing = false;
@@ -90,20 +93,20 @@ teensy_audio_error_t read_audio_block(teensy_audio_stream_t* stream, float* outp
         return TEENSY_AUDIO_ERROR;
     }
     
-    //convert 16-bit samples to float [-1.0, 1.0]
+    //convert 16-bit samples (-32768 to +32767) to float (-1.0, 1.0)
     int samples_read = bytes_read / 2;
     for (int i = 0; i < samples_read; i++) {
         output[i] = stream->buffer[i] / 32768.0f;
     }
     
-    //zero-pad if needed
+    //if it gets to the end of the file and the block is less an 16-bits, fill end with 0s
     for (int i = samples_read; i < AUDIO_BLOCK_SIZE; i++) {
         output[i] = 0.0f;
     }
     
     stream->bytes_read += bytes_read;
     
-    //print progress every 10%
+    //print progress every 10% -- also an error check if it isnt loading
     static uint32_t last_progress = 0;
     uint32_t progress = (stream->bytes_read * 100) / stream->file_size;
     if (progress >= last_progress + 10) {
@@ -116,6 +119,8 @@ teensy_audio_error_t read_audio_block(teensy_audio_stream_t* stream, float* outp
     return TEENSY_AUDIO_OK;
 }
 
+//---------closes audio file----------
+//self explanatory
 void close_audio_file(teensy_audio_stream_t* stream) {
     if (stream->audio_file) {
         stream->audio_file.close();
@@ -124,7 +129,11 @@ void close_audio_file(teensy_audio_stream_t* stream) {
     }
 }
 
+//-------------gets data output from fft------------------
+//copies FFT results from the Teensy Audio Library into array
+//fft updates contstantly, this prevents it from being overwritten
 void get_fft_data(float* fft_output, int num_bins) {
+    //checks if new data is available - fft runs continously but needs abt 23 ms to finish processing
     if (fft.available()) {
         //teensy FFT provides 256 bins for FFT512
         int max_bins = (num_bins < 256) ? num_bins : 256;
@@ -140,11 +149,12 @@ void get_fft_data(float* fft_output, int num_bins) {
     }
 }
 
+//--------plays audio file----------
 teensy_audio_error_t play_audio_file(const char* filename) {
-    // Stop any currently playing audio
+    //stop any currently playing audio
     if (playWav.isPlaying()) {
         playWav.stop();
-        delay(50); // Give it time to stop
+        delay(50); 
     }
     
     // Start playing new file
@@ -158,12 +168,12 @@ teensy_audio_error_t play_audio_file(const char* filename) {
     Serial.print("Now playing: ");
     Serial.println(filename);
     
-    // Wait for playback to actually start
     delay(10);
     
     return TEENSY_AUDIO_OK;
 }
 
+//------simple audio playing check - for main fn (prevents audio being cutoff)--------
 bool is_audio_playing(void) {
     return playWav.isPlaying();
 }
@@ -176,7 +186,7 @@ void stop_audio_playback(void) {
 }
 
 void set_volume(float vol) {
-    //keeps audio range [0.0-1.0]
+    //keeps audio range 0.0-1.0
     if (vol < 0.0f) vol = 0.0f;
     if (vol > 1.0f) vol = 1.0f;
     
