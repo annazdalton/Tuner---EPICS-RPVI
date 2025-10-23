@@ -39,33 +39,44 @@ jobs:
         platformio --version || true
         platformio project inspect || true
 
-    - name: Pre-install required libraries
+    - name: Pre-install required libraries (download Audio without git)
       run: |
-        echo "Installing SdFat and Audio library to avoid git clone issues during build"
+        echo "Downloading PaulStoffregen/Audio release archive to avoid git clone in CI"
         set -e
-        retry() {
-          local n=1
-          local max=3
-          local delay=5
-          while true; do
-            "$@" && break || {
-              if [[ $n -lt $max ]]; then
-                echo "Command failed. Attempt $n/$max:";
-                n=$((n+1))
-                echo "Retrying in $delay seconds...";
-                sleep $delay;
-              else
-                echo "The command has failed after $n attempts.";
-                return 1
-              fi
-            }
-          done
-            }
-            # Do not globally install SdFat; Teensy's framework provides a modified SdFat
-            # which conflicts with the standard SdFat. Install only the Audio library.
-            # Allow transient git clone errors (exit code 128) to not fail the whole step
-            # since platformio will still fetch libs during the build if needed.
-            retry platformio lib --global install https://github.com/PaulStoffregen/Audio.git || true
+        AUDIO_URL="https://github.com/PaulStoffregen/Audio/archive/refs/heads/master.zip"
+        mkdir -p .pio/libdeps/teensy41 || true
+        mkdir -p ~/.platformio/lib || true
+        tmpzip=$(mktemp -u /tmp/audio-XXXXXX.zip)
+        # curl the zip (retry on transient failures)
+        n=1; max=5; delay=5
+        while true; do
+          curl -fSL "$AUDIO_URL" -o "$tmpzip" && break || {
+            if [ $n -lt $max ]; then
+              echo "curl failed, attempt $n/$max. Retrying in $delay seconds...";
+              n=$((n+1)); sleep $delay;
+            else
+              echo "Failed to download Audio library after $n attempts. Continuing without preinstalled lib.";
+              break
+            fi
+          }
+        done
+        if [ -f "$tmpzip" ]; then
+          echo "Extracting Audio archive into .pio/libdeps/teensy41/Audio and ~/.platformio/lib/Audio"
+          unzip -q "$tmpzip" -d /tmp || true
+          # The archive extracts to Audio-master or Audio-<sha> depending on source; move to expected path
+          audio_src=$(find /tmp -maxdepth 1 -type d -name 'Audio*' -print -quit || true)
+          if [ -n "$audio_src" ]; then
+            rm -rf .pio/libdeps/teensy41/Audio || true
+            cp -a "$audio_src" .pio/libdeps/teensy41/Audio || true
+            # Also copy into global platformio lib cache to warm cache
+            rm -rf ~/.platformio/lib/Audio || true
+            cp -a "$audio_src" ~/.platformio/lib/Audio || true
+            rm -rf /tmp/Audio* || true
+            rm -f "$tmpzip" || true
+          fi
+        else
+          echo "Audio archive not downloaded; continuing and allowing platformio to fetch during build.";
+        fi
 
     - name: List PlatformIO library cache
       run: |
