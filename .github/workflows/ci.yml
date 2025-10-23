@@ -14,6 +14,21 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Wrap git to log invocations
+      run: |
+        echo "Creating $HOME/bin/git wrapper to log invocations"
+        mkdir -p "$HOME/bin"
+        cat > "$HOME/bin/git" <<'GITWRAP'
+#!/bin/sh
+LOGFILE="${GITHUB_WORKSPACE:-.}/git-invocations.log"
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) PID $$ ARGS: $@" >> "$LOGFILE"
+# Call the real git
+/usr/bin/git "$@"
+GITWRAP
+        chmod +x "$HOME/bin/git"
+        # Prepend our wrapper to PATH for subsequent steps
+        echo "PATH=$HOME/bin:$PATH" >> $GITHUB_ENV
+
     - name: Cache PlatformIO packages
       uses: actions/cache@v4
       with:
