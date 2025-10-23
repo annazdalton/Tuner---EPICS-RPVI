@@ -60,10 +60,10 @@ jobs:
               fi
             }
           done
-        }
-  # Do not globally install SdFat; Teensy's framework provides a modified SdFat
-  # which conflicts with the standard SdFat. Install only the Audio library.
-  retry platformio lib --global install https://github.com/PaulStoffregen/Audio.git
+            }
+            # Do not globally install SdFat; Teensy's framework provides a modified SdFat
+            # which conflicts with the standard SdFat. Install only the Audio library.
+            retry platformio lib --global install https://github.com/PaulStoffregen/Audio.git
 
     - name: List PlatformIO library cache
       run: |
@@ -73,15 +73,15 @@ jobs:
     - name: Build native environment
       run: |
         echo "Creating temporary native-only PlatformIO config to avoid Arduino lib_deps"
-    cat > platformio.native.ini << 'EOF'
-    [env:native]
-    platform = native
-    build_flags = -I"${PROJECT_DIR}/Guitar Unit Testing Files"
-    lib_ldf_mode = deep
-    build_src_filter =
-      +<*>
-      -<teensy_audio_io*>
-    EOF
+        printf '%s\n' \
+          '[env:native]' \
+          'platform = native' \
+          'build_flags = -I"${PROJECT_DIR}/Guitar Unit Testing Files"' \
+          'lib_ldf_mode = deep' \
+          'build_src_filter =' \
+          '    +<*>' \
+          '    -<teensy_audio_io*>' \
+        > platformio.native.ini
         platformio run -e native -v --project-conf platformio.native.ini
 
     - name: Build teensy41 environment
