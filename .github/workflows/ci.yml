@@ -42,12 +42,46 @@ jobs:
     - name: Pre-install required libraries
       run: |
         echo "Installing SdFat and Audio library to avoid git clone issues during build"
-        platformio lib --global install SdFat || true
-        platformio lib --global install https://github.com/PaulStoffregen/Audio.git || true
+        set -e
+        retry() {
+          local n=1
+          local max=3
+          local delay=5
+          while true; do
+            "$@" && break || {
+              if [[ $n -lt $max ]]; then
+                echo "Command failed. Attempt $n/$max:";
+                n=$((n+1))
+                echo "Retrying in $delay seconds...";
+                sleep $delay;
+              else
+                echo "The command has failed after $n attempts.";
+                return 1
+              fi
+            }
+          done
+        }
+        retry platformio lib --global install SdFat
+        retry platformio lib --global install https://github.com/PaulStoffregen/Audio.git
+
+    - name: List PlatformIO library cache
+      run: |
+        echo "PlatformIO library cache contents:"
+        ls -la ~/.platformio/lib || true
 
     - name: Build native environment
       run: |
-        platformio run -e native -v
+        echo "Creating temporary native-only PlatformIO config to avoid Arduino lib_deps"
+    cat > platformio.native.ini << 'EOF'
+[env:native]
+platform = native
+build_flags = -I"${PROJECT_DIR}/Guitar Unit Testing Files"
+lib_ldf_mode = deep
+src_filter =
+  +<*>
+  -<teensy_audio_io*>
+EOF
+        platformio run -e native -v --project-conf platformio.native.ini
 
     - name: Build teensy41 environment
       run: |
