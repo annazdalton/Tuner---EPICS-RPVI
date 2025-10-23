@@ -1,18 +1,36 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
 {
-  "configurations": [
-    {
-      "name": "windows-gcc-x64",
-      "includePath": [
-        "${workspaceFolder}/**"
-      ],
-      "compilerPath": "gcc",
-      "cStandard": "${default}",
-      "cppStandard": "${default}",
-      "intelliSenseMode": "windows-gcc-x64",
-      "compilerArgs": [
-        ""
-      ]
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "name": "PlatformIO",
+            "includePath": [
+                "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/src",
+                "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/Guitar Unit Testing Files",
+                "C:/Users/User/.platformio/lib/Audio",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/src",
+                    "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/Guitar Unit Testing Files",
+                    "C:/Users/User/.platformio/lib/Audio",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=60118",
+                ""
+            ],
+            "compilerPath": "C:/MinGW/bin/gcc.exe",
+            "compilerArgs": [
+                ""
+            ]
+        }
+    ],
+    "version": 4
 }

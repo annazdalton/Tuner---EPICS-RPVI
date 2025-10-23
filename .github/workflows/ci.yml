@@ -1,0 +1,164 @@
+name: CI - Build & Run Tests
+
+on:
+  push:
+    branches: [ main, Sai ]
+  pull_request:
+    branches: [ main, Sai ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Enable git tracing for diagnostics
+      run: |
+        echo "Enabling GIT_TRACE and GIT_CURL_VERBOSE for subsequent steps"
+        # These environment variables cause git to print trace/curl output to stderr
+        echo "GIT_TRACE=1" >> $GITHUB_ENV
+        echo "GIT_CURL_VERBOSE=1" >> $GITHUB_ENV
+
+    - name: Cache PlatformIO packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.platformio
+          .pio
+        key: ${{ runner.os }}-platformio-${{ hashFiles('**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-platformio-
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install PlatformIO Core
+      run: |
+        python -m pip install --upgrade pip
+        pip install platformio
+
+    - name: PlatformIO diagnostics
+      run: |
+        platformio --version || true
+        platformio project inspect || true
+
+    - name: Pre-install required libraries (download Audio without git)
+      run: |
+        echo "Downloading PaulStoffregen/Audio release archive to avoid git clone in CI"
+        set -e
+        AUDIO_URL="https://github.com/PaulStoffregen/Audio/archive/refs/heads/master.zip"
+        mkdir -p .pio/libdeps/teensy41 || true
+        mkdir -p ~/.platformio/lib || true
+        tmpzip=$(mktemp -u /tmp/audio-XXXXXX.zip)
+        # curl the zip (retry on transient failures)
+        n=1; max=5; delay=5
+        while true; do
+          curl -fSL "$AUDIO_URL" -o "$tmpzip" && break || {
+            if [ $n -lt $max ]; then
+              echo "curl failed, attempt $n/$max. Retrying in $delay seconds...";
+              n=$((n+1)); sleep $delay;
+            else
+              echo "Failed to download Audio library after $n attempts. Continuing without preinstalled lib.";
+              break
+            fi
+          }
+        done
+        if [ -f "$tmpzip" ]; then
+          echo "Extracting Audio archive into .pio/libdeps/teensy41/Audio and ~/.platformio/lib/Audio"
+          unzip -q "$tmpzip" -d /tmp || true
+          # The archive extracts to Audio-master or Audio-<sha> depending on source; move to expected path
+          audio_src=$(find /tmp -maxdepth 1 -type d -name 'Audio*' -print -quit || true)
+          if [ -n "$audio_src" ]; then
+            rm -rf .pio/libdeps/teensy41/Audio || true
+            cp -a "$audio_src" .pio/libdeps/teensy41/Audio || true
+            # Also copy into global platformio lib cache to warm cache
+            rm -rf ~/.platformio/lib/Audio || true
+            cp -a "$audio_src" ~/.platformio/lib/Audio || true
+            rm -rf /tmp/Audio* || true
+            rm -f "$tmpzip" || true
+          fi
+        else
+          echo "Audio archive not downloaded; continuing and allowing platformio to fetch during build.";
+        fi
+
+    - name: List PlatformIO library cache
+      run: |
+        echo "PlatformIO library cache contents:"
+        ls -la ~/.platformio/lib || true
+
+    - name: Build native environment
+      run: |
+        echo "Building native environment (host tests) using project platformio.ini"
+        platformio project inspect -e native || true
+        platformio run -e native -v
+
+    - name: Build teensy41 environment
+      run: |
+        echo "Building teensy41 environment (embedded build only; no upload)"
+        # Remove any SdFat library that PlatformIO may have placed into
+        # .pio/libdeps/teensy41. Teensy's framework provides its own
+        # modified SdFat which must be used instead; leftover copies in
+        # project libdeps cause SD.h to error out.
+        if [ -d .pio/libdeps/teensy41/SdFat ]; then
+          echo "Found .pio/libdeps/teensy41/SdFat; removing to prefer Teensy's bundled copy"
+          rm -rf .pio/libdeps/teensy41/SdFat
+        fi
+        # Ensure Teensy's bundled SdFat headers are available in project libdeps
+        # Some PlatformIO/LDF settings may not add framework libraries to include
+        # paths in the expected order; copy the framework SdFat into .pio/libdeps
+        # so the compiler can find SdFat.h reliably.
+        mkdir -p .pio/libdeps/teensy41 || true
+        if [ -d ~/.platformio/packages/framework-arduinoteensy/libraries/SdFat ]; then
+          echo "Copying framework SdFat into .pio/libdeps/teensy41/SdFat"
+          rm -rf .pio/libdeps/teensy41/SdFat || true
+          cp -a ~/.platformio/packages/framework-arduinoteensy/libraries/SdFat .pio/libdeps/teensy41/SdFat || true
+        else
+          echo "Framework SdFat not found at ~/.platformio/packages/framework-arduinoteensy/libraries/SdFat"
+        fi
+        echo "libdeps after cleanup:" && ls -la .pio/libdeps || true
+        platformio run -e teensy41 -v
+
+    - name: Run produced test binary
+      run: |
+        echo "Listing .pio/build directory for debugging"
+        ls -la .pio/build || true
+
+        exe=""
+        if [ -d .pio/build/native ]; then
+          echo "Searching for executable with user/group/other execute bits under .pio/build/native"
+          exe=$(find .pio/build/native -type f -perm /111 -print -quit || true)
+          if [ -z "$exe" ]; then
+            echo "No file with execute bits. Searching for non-empty files and checking ELF header..."
+            candidate=$(find .pio/build/native -type f -size +0 -print -quit || true)
+            if [ -n "$candidate" ]; then
+              if file "$candidate" | grep -q ELF; then
+                exe=$candidate
+              else
+                echo "Candidate found but not ELF: $candidate"
+              fi
+            fi
+          fi
+        fi
+
+        if [ -z "$exe" ]; then
+          echo "No program binary found in .pio/build/native"
+          echo "Contents of .pio/build:"; ls -la .pio/build || true
+          echo "Showing any build output files under .pio/build/native (if present):"; find .pio/build/native -maxdepth 2 -type f -exec ls -la {} \; || true
+          echo "Failing early so CI output contains diagnostics for why the native binary is missing.";
+          exit 2
+        fi
+
+        echo "Running test binary: $exe"
+        chmod +x "$exe" || true
+        "$exe"
+
+    - name: Archive test output
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: pio-build
+        path: .pio/build/native/

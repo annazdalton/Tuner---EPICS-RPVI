@@ -1,0 +1,16 @@
+Processing native (platform: native; build_flags: -I"C:\Users\User\OneDrive - purdue.edu\Desktop\EPCS 41200\Tuner---EPICS-RPVI/Guitar Unit Testing Files"; lib_ldf_mode: deep)
+--------------------------------------------------------------------------------
+LDF: Library Dependency Finder -> https://bit.ly/configure-pio-ldf
+LDF Modes: Finder ~ deep, Compatibility ~ soft
+Found 0 compatible libraries
+Scanning dependencies...
+No dependencies
+Building in release mode
+`.pio\build\native\program.exe' is up to date.
+========================= [SUCCESS] Took 1.95 seconds =========================
+
+Environment    Status    Duration
+-------------  --------  ------------
+native         SUCCESS   00:00:01.946
+teensy41       IGNORED
+========================= 1 succeeded in 00:00:01.946 =========================
