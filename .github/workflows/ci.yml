@@ -72,17 +72,9 @@ jobs:
 
     - name: Build native environment
       run: |
-        echo "Creating temporary native-only PlatformIO config to avoid Arduino lib_deps"
-        printf '%s\n' \
-          '[env:native]' \
-          'platform = native' \
-          'build_flags = -I"${PROJECT_DIR}/Guitar Unit Testing Files"' \
-          'lib_ldf_mode = deep' \
-          'build_src_filter =' \
-          '    +<*>' \
-          '    -<teensy_audio_io*>' \
-        > platformio.native.ini
-        platformio run -e native -v --project-conf platformio.native.ini
+        echo "Building native environment (host tests) using project platformio.ini"
+        platformio project inspect -e native || true
+        platformio run -e native -v
 
     - name: Build teensy41 environment
       run: |
