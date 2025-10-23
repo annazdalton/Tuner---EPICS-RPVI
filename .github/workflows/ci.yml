@@ -95,6 +95,18 @@ jobs:
           echo "Found .pio/libdeps/teensy41/SdFat; removing to prefer Teensy's bundled copy"
           rm -rf .pio/libdeps/teensy41/SdFat
         fi
+        # Ensure Teensy's bundled SdFat headers are available in project libdeps
+        # Some PlatformIO/LDF settings may not add framework libraries to include
+        # paths in the expected order; copy the framework SdFat into .pio/libdeps
+        # so the compiler can find SdFat.h reliably.
+        mkdir -p .pio/libdeps/teensy41 || true
+        if [ -d ~/.platformio/packages/framework-arduinoteensy/libraries/SdFat ]; then
+          echo "Copying framework SdFat into .pio/libdeps/teensy41/SdFat"
+          rm -rf .pio/libdeps/teensy41/SdFat || true
+          cp -a ~/.platformio/packages/framework-arduinoteensy/libraries/SdFat .pio/libdeps/teensy41/SdFat || true
+        else
+          echo "Framework SdFat not found at ~/.platformio/packages/framework-arduinoteensy/libraries/SdFat"
+        fi
         echo "libdeps after cleanup:" && ls -la .pio/libdeps || true
         platformio run -e teensy41 -v
 
