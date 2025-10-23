@@ -61,8 +61,9 @@ jobs:
             }
           done
         }
-        retry platformio lib --global install SdFat
-        retry platformio lib --global install https://github.com/PaulStoffregen/Audio.git
+  # Do not globally install SdFat; Teensy's framework provides a modified SdFat
+  # which conflicts with the standard SdFat. Install only the Audio library.
+  retry platformio lib --global install https://github.com/PaulStoffregen/Audio.git
 
     - name: List PlatformIO library cache
       run: |
@@ -72,20 +73,29 @@ jobs:
     - name: Build native environment
       run: |
         echo "Creating temporary native-only PlatformIO config to avoid Arduino lib_deps"
-        cat > platformio.native.ini << 'EOF'
-        [env:native]
-        platform = native
-        build_flags = -I"${PROJECT_DIR}/Guitar Unit Testing Files"
-        lib_ldf_mode = deep
-        src_filter =
-            +<*>
-            -<teensy_audio_io*>
-        EOF
+    cat > platformio.native.ini << 'EOF'
+    [env:native]
+    platform = native
+    build_flags = -I"${PROJECT_DIR}/Guitar Unit Testing Files"
+    lib_ldf_mode = deep
+    build_src_filter =
+      +<*>
+      -<teensy_audio_io*>
+    EOF
         platformio run -e native -v --project-conf platformio.native.ini
 
     - name: Build teensy41 environment
       run: |
         echo "Building teensy41 environment (embedded build only; no upload)"
+        # Remove any SdFat library that PlatformIO may have placed into
+        # .pio/libdeps/teensy41. Teensy's framework provides its own
+        # modified SdFat which must be used instead; leftover copies in
+        # project libdeps cause SD.h to error out.
+        if [ -d .pio/libdeps/teensy41/SdFat ]; then
+          echo "Found .pio/libdeps/teensy41/SdFat; removing to prefer Teensy's bundled copy"
+          rm -rf .pio/libdeps/teensy41/SdFat
+        fi
+        echo "libdeps after cleanup:" && ls -la .pio/libdeps || true
         platformio run -e teensy41 -v
 
     - name: Run produced test binary
