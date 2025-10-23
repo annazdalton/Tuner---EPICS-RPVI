@@ -14,6 +14,16 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Cache PlatformIO packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.platformio
+          .pio
+        key: ${{ runner.os }}-platformio-${{ hashFiles('**/platformio.ini') }}
+        restore-keys: |
+          ${{ runner.os }}-platformio-
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
@@ -24,20 +34,43 @@ jobs:
         python -m pip install --upgrade pip
         pip install platformio
 
+    - name: PlatformIO diagnostics
+      run: |
+        platformio --version || true
+        platformio project inspect || true
+
+    - name: Pre-install required libraries
+      run: |
+        echo "Installing SdFat and Audio library to avoid git clone issues during build"
+        platformio lib --global install SdFat || true
+        platformio lib --global install https://github.com/PaulStoffregen/Audio.git || true
+
     - name: Build native environment
       run: |
         platformio run -e native -v
 
+    - name: Build teensy41 environment
+      run: |
+        echo "Building teensy41 environment (embedded build only; no upload)"
+        platformio run -e teensy41 -v
+
     - name: Run produced test binary
       run: |
-        exe=.pio/build/native/program
-        if [ -f "$exe" ]; then
-          chmod +x "$exe"
-          "$exe"
+        echo "Listing .pio/build/native contents for debugging"
+        ls -la .pio/build/native || true
+        # Try common executable names produced by PlatformIO on Linux/Windows
+        if [ -f .pio/build/native/program ]; then
+          exe=.pio/build/native/program
+        elif [ -f .pio/build/native/program.exe ]; then
+          exe=.pio/build/native/program.exe
         else
-          echo "Executable not found: $exe"
+          echo "No program binary found in .pio/build/native"
+          ls -la .pio/build || true
           exit 2
         fi
+        echo "Running test binary: $exe"
+        chmod +x "$exe" || true
+        "$exe"
 
     - name: Archive test output
       if: always()

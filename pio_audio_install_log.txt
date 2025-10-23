@@ -1,0 +1,4 @@
+Usage: platformio lib install [OPTIONS] [LIBRARY...]
+Try 'platformio lib install -h' for help.
+
+Error: No such option: -v
