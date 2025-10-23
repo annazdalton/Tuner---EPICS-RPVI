@@ -18,13 +18,13 @@ jobs:
       run: |
         echo "Creating $HOME/bin/git wrapper to log invocations"
         mkdir -p "$HOME/bin"
-        # Use printf to avoid heredoc/YAML indentation issues
-        printf '%s
-'"'"' '#!/bin/sh'"'"' '%s
-'"'"' 'LOGFILE="${GITHUB_WORKSPACE:-.}/git-invocations.log"'"'"' '%s
-'"'"' 'echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) PID $$ ARGS: $@" >> "$LOGFILE"'"'"' '%s
-'"'"' '# Call the real git'"'"' '%s
-'"'"' '/usr/bin/git "$@"'"'"' > "$HOME/bin/git"
+        cat > "$HOME/bin/git" <<'EOF'
+#!/bin/sh
+LOGFILE="${GITHUB_WORKSPACE:-.}/git-invocations.log"
+echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) PID $$ ARGS: $@" >> "$LOGFILE"
+# Call the real git
+/usr/bin/git "$@"
+EOF
         chmod +x "$HOME/bin/git"
         # Prepend our wrapper to PATH for subsequent steps
         echo "PATH=$HOME/bin:$PATH" >> $GITHUB_ENV
