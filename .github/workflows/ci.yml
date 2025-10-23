@@ -63,7 +63,9 @@ jobs:
             }
             # Do not globally install SdFat; Teensy's framework provides a modified SdFat
             # which conflicts with the standard SdFat. Install only the Audio library.
-            retry platformio lib --global install https://github.com/PaulStoffregen/Audio.git
+            # Allow transient git clone errors (exit code 128) to not fail the whole step
+            # since platformio will still fetch libs during the build if needed.
+            retry platformio lib --global install https://github.com/PaulStoffregen/Audio.git || true
 
     - name: List PlatformIO library cache
       run: |
