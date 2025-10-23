@@ -112,18 +112,34 @@ jobs:
 
     - name: Run produced test binary
       run: |
-        echo "Listing .pio/build/native contents for debugging"
-        ls -la .pio/build/native || true
-        # Try common executable names produced by PlatformIO on Linux/Windows
-        if [ -f .pio/build/native/program ]; then
-          exe=.pio/build/native/program
-        elif [ -f .pio/build/native/program.exe ]; then
-          exe=.pio/build/native/program.exe
-        else
+        echo "Listing .pio/build directory for debugging"
+        ls -la .pio/build || true
+
+        exe=""
+        if [ -d .pio/build/native ]; then
+          echo "Searching for executable with user/group/other execute bits under .pio/build/native"
+          exe=$(find .pio/build/native -type f -perm /111 -print -quit || true)
+          if [ -z "$exe" ]; then
+            echo "No file with execute bits. Searching for non-empty files and checking ELF header..."
+            candidate=$(find .pio/build/native -type f -size +0 -print -quit || true)
+            if [ -n "$candidate" ]; then
+              if file "$candidate" | grep -q ELF; then
+                exe=$candidate
+              else
+                echo "Candidate found but not ELF: $candidate"
+              fi
+            fi
+          fi
+        fi
+
+        if [ -z "$exe" ]; then
           echo "No program binary found in .pio/build/native"
-          ls -la .pio/build || true
+          echo "Contents of .pio/build:"; ls -la .pio/build || true
+          echo "Showing any build output files under .pio/build/native (if present):"; find .pio/build/native -maxdepth 2 -type f -exec ls -la {} \; || true
+          echo "Failing early so CI output contains diagnostics for why the native binary is missing.";
           exit 2
         fi
+
         echo "Running test binary: $exe"
         chmod +x "$exe" || true
         "$exe"
