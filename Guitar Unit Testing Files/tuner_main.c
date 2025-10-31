@@ -92,7 +92,8 @@ void print_tuning_result(TuningResult* result) {
 
 /**
  * Set the target string for tuning
- * @param string_num: 0=auto, 1=E2, 2=A2, 3=D3, 4=G3, 5=B3, 6=E4
+@param string_num: 0=auto, 1=E2, 2=A2, 3=D3, 4=G3, 5=B3, 6=E4 
+ Also Param string num means  1-6 for specific strings and 0 for auto-detect
  */
 void set_target_string(int string_num) {
     if (string_num >= 0 && string_num <= 6) {

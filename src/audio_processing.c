@@ -2,7 +2,6 @@
  * audio_processing.c - Audio processing implementation
  *
  * Simulates FFT processing for frequency detection
- * In actual implementation, this would use the arduinoFFT library
  */
 
 #include <math.h>

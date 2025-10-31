@@ -1,21 +1,22 @@
 #define TEENSY_AUDIO_IO_H
 
-//libraries
-#include <Audio.h> 
-#include <SD.h>
-#include <SPI.h>
-#include <SerialFlash.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
 
-// Teensy-specific configuration
-#define AUDIO_BLOCK_SIZE 128 //this is teensy specific block size -- verify that this is correct !!!!
-#define FFT_SIZE 512 //this is specific for real time FFT - verify that this is correct !!!!!
-#define AUDIO_SAMPLE_RATE 44100 //check that this is correct
-#define SD_CHIP_SELECT 
-#define BUILTIN_SDCARD
+// Standard C-based configuration (no Arduino-specific constants)
+#define AUDIO_BLOCK_SIZE 128 // Audio block size in samples (~2.9ms at 44.1kHz)
+#define FFT_SIZE 512 // FFT size for real-time frequency analysis
+#define AUDIO_SAMPLE_RATE 44100 // Sample rate in Hz
+#define SD_CHIP_SELECT 10 // Standard SPI chip select pin
+#define MAX_FILENAME_LENGTH 256
 
-//audio streaming structure
+// Opaque pointer for file handle (implementation platform-dependent)
+typedef void* audio_file_handle_t;
+
+// Audio streaming structure using standard C types
 typedef struct {
-    File audio_file;
+    audio_file_handle_t audio_file;
     bool is_playing;
     uint32_t file_size;
     uint32_t bytes_read;
