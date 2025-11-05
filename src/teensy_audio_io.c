@@ -1,7 +1,9 @@
-#include "teensy_audio_io.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include "arm_math.h"
+#include "teensy_audio_io.h"
 
 // teensy_audio_io.cpp converted to C using Claude AI
 

@@ -8,19 +8,17 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/src",
-                "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/Guitar Unit Testing Files",
-                "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/CMSIS-DSP-Tests",
-                "C:/Users/User/.platformio/lib/Audio",
+                "/home/annaz/Tuner---EPICS-RPVI/src",
+                "/home/annaz/Tuner---EPICS-RPVI/Guitar Unit Testing Files",
+                "/home/annaz/Tuner---EPICS-RPVI/CMSIS-DSP-Tests",
                 ""
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/src",
-                    "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/Guitar Unit Testing Files",
-                    "C:/Users/User/OneDrive - purdue.edu/Desktop/EPCS 41200/Tuner---EPICS-RPVI/CMSIS-DSP-Tests",
-                    "C:/Users/User/.platformio/lib/Audio",
+                    "/home/annaz/Tuner---EPICS-RPVI/src",
+                    "/home/annaz/Tuner---EPICS-RPVI/Guitar Unit Testing Files",
+                    "/home/annaz/Tuner---EPICS-RPVI/CMSIS-DSP-Tests",
                     ""
                 ]
             },
@@ -29,7 +27,7 @@
                 ""
             ],
             "cStandard": "c99",
-            "compilerPath": "C:/MinGW/bin/gcc.exe",
+            "compilerPath": "/usr/bin/gcc",
             "compilerArgs": [
                 ""
             ]
