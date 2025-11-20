@@ -27,7 +27,7 @@ float insertion_sort(float *buffer, int size) {
 
 // MEDIAN FILTER
 // window size: smaller window size - less smoothing of data, bigger window size - more smoothing of data
-void median_filter() {
+void median_filter(const float *input, float *output, int length, int window) {
 
 
 }
