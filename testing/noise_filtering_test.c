@@ -1,6 +1,7 @@
 //noise filtering test function
+#include "../src/noise_filtering.c"
 
-int median_filter_test() {
+int main() {
     // test case: 20 samples with some noise spikes
     float input[20] = {
         1.0, 2.0, 3.0, 100.0, 5.0,    // spike at index 3 (value 100.0)

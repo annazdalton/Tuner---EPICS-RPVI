@@ -37,7 +37,6 @@ void median_filter(const float *input, float *output, int length, int window_siz
     float *window_buffer = (float *)malloc(window_size * sizeof(float));
     if(!window_buffer) {
         fprintf(stderr, "Memory allocation failed\n");
-        return -1;
     }
 
     //iterate through every element of audio data array
