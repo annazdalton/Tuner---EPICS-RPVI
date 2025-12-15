@@ -1,25 +1,21 @@
-#include "teensy_audio_io.h"
-#include <stdio.h>
-#include <string.h>
-#include <time.h>
+#include "teensy_audio_io.h" //header file
+#include <Arduino.h> 
 
-// Placeholder implementations - these would be implemented with platform-specific code
-// when targeting actual hardware (Teensy, STM32, etc.)
-
-// Forward declarations for platform-specific implementations
-// In a real implementation, these would be in a separate HAL module
-
-typedef struct {
-    FILE* file_ptr;
-    size_t file_size;
-    size_t bytes_read;
-} file_handle_impl_t; 
-
-// Static audio processing state (replaces Arduino global objects)
-static bool audio_system_initialized = false;
-static float fft_data[256];
-static uint32_t audio_memory_blocks = 0;
-static float current_volume = 0.5f;
+// --------- GLOBAL OBJECTS ---------
+// playWav: read WAV files from SD card
+// fft: analyzes frequency (1024-point fft)
+// i2s_out: sends data to speaker via I2S protocol 
+// patchCord1: connects audio to FFT analyzer
+// patchCord2: connects left channel to speaker
+// patchCord3: connects right channel to speaker
+// sgt15000: controls audio codec chip
+AudioPlaySdWav           playWav;
+AudioAnalyzeFFT1024      fft;
+AudioOutputI2S           i2s_out;
+AudioConnection          patchCord1(playWav, 0, fft, 0);
+AudioConnection          patchCord2(playWav, 0, i2s_out, 0);
+AudioConnection          patchCord3(playWav, 1, i2s_out, 1);
+AudioControlSGTL5000     sgtl5000;
 
 
 // -------- Initializes audio system --------
