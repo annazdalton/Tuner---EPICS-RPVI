@@ -10,6 +10,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Tuning result structure
 typedef struct {
     int detected_string;      // Which string was detected (1-6)
@@ -46,5 +50,9 @@ double calculate_cents_offset(double detected_freq, double target_freq);
 const char* get_tuning_direction(double cents);
 int find_closest_string(double frequency, double* closest_freq);
 int find_closest_note(double frequency, double* closest_freq, int* string_num);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
